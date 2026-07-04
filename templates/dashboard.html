@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+    
+    .stat-card {
+        background: var(--white);
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: var(--card-shadow);
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: transform 0.2s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        color: var(--white);
+    }
+    
+    .icon-sales { background: linear-gradient(135deg, #4F46E5, #3B82F6); }
+    .icon-bills { background: linear-gradient(135deg, #10B981, #34D399); }
+    .icon-alert { background: linear-gradient(135deg, #EF4444, #F87171); }
+    .icon-warning { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
+    
+    .stat-info h4 {
+        color: var(--text-light);
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+    }
+    
+    .stat-info h2 {
+        color: var(--text-main);
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+</style>
+
+<div class="page-title">Dashboard Overview</div>
+
+<div class="dashboard-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-sales">
+            <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div class="stat-info">
+            <h4>Today's Sales</h4>
+            <h2 id="dash-sales">Rs. 0</h2>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon icon-bills">
+            <i class="fa-solid fa-file-invoice"></i>
+        </div>
+        <div class="stat-info">
+            <h4>Total Bills</h4>
+            <h2 id="dash-bills">0</h2>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon icon-alert">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div class="stat-info">
+            <h4>Low Stock Items</h4>
+            <h2 id="dash-low-stock">0</h2>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon icon-warning">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <div class="stat-info">
+            <h4>Expiring (30 Days)</h4>
+            <h2 id="dash-expiring">0</h2>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Sidebar highlight
+    document.getElementById('nav-dashboard').classList.add('active');
+
+    // Dashboard ka data backend se fetch karna
+    async function loadDashboardStats() {
+        try {
+            const response = await fetch('/api/reports/dashboard');
+            const data = await response.json();
+            
+            // HTML elements ko update karna
+            document.getElementById('dash-sales').innerText = `Rs. ${data.today_sales.toFixed(2)}`;
+            document.getElementById('dash-bills').innerText = data.today_bills_count;
+            document.getElementById('dash-low-stock').innerText = data.low_stock_count;
+            document.getElementById('dash-expiring').innerText = data.expiring_items_count;
+            
+        } catch (error) {
+            console.error("Dashboard data load karne mein masla:", error);
+        }
+    }
+
+    // Page load hote hi function chalao
+    document.addEventListener('DOMContentLoaded', loadDashboardStats);
+</script>
+{% endblock %}

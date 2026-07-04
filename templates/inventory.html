@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* Choti si specific styling forms ke liye */
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        margin-top: 5px;
+        outline: none;
+        transition: 0.2s;
+    }
+    .form-control:focus {
+        border-color: var(--primary-color);
+    }
+    label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-light);
+    }
+    table th, table td {
+        padding: 12px;
+        border-bottom: 1px solid #E5E7EB;
+    }
+</style>
+
+<div class="page-title">Inventory Management</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 15px; color: var(--primary-color);"><i class="fa-solid fa-plus"></i> Add New Medicine</h3>
+    <form id="addMedicineForm" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <div>
+            <label>Barcode (Leave empty to auto-generate)</label>
+            <input type="text" id="barcode" class="form-control" placeholder="Scan barcode with scanner...">
+        </div>
+        <div>
+            <label>Medicine Name *</label>
+            <input type="text" id="name" class="form-control" required>
+        </div>
+        <div>
+            <label>Generic Name</label>
+            <input type="text" id="generic_name" class="form-control">
+        </div>
+        <div>
+            <label>Purchase Price *</label>
+            <input type="number" id="purchase_price" class="form-control" step="0.01" required>
+        </div>
+        <div>
+            <label>Sale Price *</label>
+            <input type="number" id="sale_price" class="form-control" step="0.01" required>
+        </div>
+        <div>
+            <label>Initial Stock</label>
+            <input type="number" id="stock_quantity" class="form-control" value="0">
+        </div>
+        <div>
+            <label>Expiry Date</label>
+            <input type="date" id="expiry_date" class="form-control">
+        </div>
+        <div style="grid-column: span 3; text-align: right; margin-top: 10px;">
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Medicine</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="color: var(--text-main); margin: 0;"><i class="fa-solid fa-list"></i> Current Stock</h3>
+        <input type="text" id="searchInput" class="form-control" placeholder="Search name or barcode..." style="width: 250px; margin-top: 0;">
+    </div>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--bg-color);">
+                    <th>Barcode</th>
+                    <th>Name</th>
+                    <th>Sale Price</th>
+                    <th>Stock</th>
+                    <th>Expiry</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+                </tbody>
+        </table>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; margin-top: 15px; align-items: center;">
+        <button id="prevPageBtn" class="btn" style="background: #E5E7EB; color: #374151;">&laquo; Previous</button>
+        <span id="pageInfo" style="font-weight: bold; font-size: 0.9rem;">Page 1</span>
+        <button id="nextPageBtn" class="btn" style="background: #E5E7EB; color: #374151;">Next &raquo;</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Sidebar mein Inventory tab ko active highlight karne ke liye
+    document.getElementById('nav-inventory').classList.add('active');
+    
+    // JS logic hum app.js mein add karenge jo is form ko backend se connect karegi
+</script>
+{% endblock %}

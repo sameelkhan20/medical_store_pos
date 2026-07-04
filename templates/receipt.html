@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt - {{ bill_number }}</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
+    <style>
+        /* Thermal Printer Friendly Black & White Styling */
+        body { 
+            font-family: 'Courier New', Courier, monospace; 
+            color: #000; 
+            background: #fff; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex;
+            justify-content: center;
+        }
+        .receipt-container { 
+            width: 320px; /* Standard POS printer width */
+            text-align: left; 
+        }
+        .center { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 6px 0; font-size: 14px; border-bottom: 1px dashed #000; }
+        .total-section { font-weight: bold; font-size: 15px; border-top: 2px solid #000; margin-top: 10px; padding-top: 10px;}
+        svg { max-width: 100%; height: auto; }
+        
+        /* Jab physically print ho toh button chup jaye */
+        @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <h2 class="center" style="margin-bottom: 5px;">PharmaPOS Store</h2>
+        <p class="center" style="font-size: 12px; margin-top: 0;">123 Health Ave, Medical City</p>
+        
+        <hr style="border: 1px dashed #000;">
+        <p style="margin: 5px 0;"><strong>Bill No:</strong> {{ bill_number }}</p>
+        <p style="margin: 5px 0;"><strong>Date:</strong> <span id="billDate"></span></p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="text-align: left;">Item</th>
+                    <th>Qty</th>
+                    <th style="text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody id="receiptItems">
+                </tbody>
+        </table>
+        
+        <div class="total-section">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>Subtotal:</span> <span id="r-subtotal"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>Discount:</span> <span id="r-discount"></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 18px; margin-top: 8px; border-top: 1px dashed #000; padding-top: 8px;">
+                <span>FINAL:</span> <span id="r-final"></span>
+            </div>
+        </div>
+        
+        <div class="center" style="margin-top: 25px;">
+            <svg id="barcode"></svg>
+        </div>
+        
+        <p class="center" style="font-size: 12px; margin-top: 15px;">Thank you for your visit!</p>
+        <p class="center" style="font-size: 10px;">Software by Zayab Ansari</p>
+        
+        <div class="center no-print" style="margin-top: 20px;">
+            <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; border: 2px solid #000; background: #fff; font-weight: bold;">
+                🖨️ Print Receipt
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const billNumber = "{{ bill_number }}";
+        
+        async function loadReceipt() {
+            try {
+                const response = await fetch(`/api/pos/bill/${billNumber}`);
+                const data = await response.json();
+                
+                document.getElementById('billDate').innerText = new Date(data.date).toLocaleString();
+                document.getElementById('r-subtotal').innerText = 'Rs. ' + data.total_amount.toFixed(2);
+                document.getElementById('r-discount').innerText = 'Rs. ' + data.discount.toFixed(2);
+                document.getElementById('r-final').innerText = 'Rs. ' + data.final_amount.toFixed(2);
+                
+                const tbody = document.getElementById('receiptItems');
+                data.items.forEach(item => {
+                    const row = `<tr>
+                        <td>${item.name}</td>
+                        <td style="text-align: center;">${item.quantity}</td>
+                        <td style="text-align: right;">${item.total_price.toFixed(2)}</td>
+                    </tr>`;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+                
+                // Code128 format mein barcode generate karna [cite: 44]
+                JsBarcode("#barcode", billNumber, {
+                    format: "CODE128",
+                    width: 1.5,
+                    height: 45,
+                    displayValue: true,
+                    fontSize: 14
+                });
+                
+                // Screen load hote hi automatically print dialog open karna
+                setTimeout(() => window.print(), 800);
+                
+            } catch (error) {
+                console.error("Receipt loading failed", error);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', loadReceipt);
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaPOS - Medical Store System</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fa-solid fa-staff-snake"></i> PharmaPOS
+        </div>
+        <ul class="nav-links">
+            <li>
+                <a href="/dashboard" id="nav-dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="/pos" id="nav-pos">
+                    <i class="fa-solid fa-cash-register"></i> Billing (POS)
+                </a>
+            </li>
+            <li>
+                <a href="/inventory" id="nav-inventory">
+                    <i class="fa-solid fa-boxes-stacked"></i> Inventory
+                </a>
+            </li>
+            <li>
+                <a href="/reports" id="nav-reports">
+                    <i class="fa-solid fa-file-invoice-dollar"></i> Reports
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <script src="/static/js/app.js"></script>
+    
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

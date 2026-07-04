@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .report-section {
+        background: var(--white);
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 25px;
+    }
+    .report-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #E5E7EB;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    .filter-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    input[type="date"] {
+        padding: 8px 12px;
+        border: 1px solid #D1D5DB;
+        border-radius: 6px;
+        outline: none;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+    th, td {
+        padding: 12px;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    .badge-danger {
+        background: var(--danger);
+        color: var(--white);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+</style>
+
+<div class="page-title">Reports & Analytics</div>
+
+<div class="report-section">
+    <div class="report-header">
+        <h3 style="color: var(--text-main);"><i class="fa-solid fa-calendar-day"></i> Daily Sales History</h3>
+        <div class="filter-group">
+            <label>Select Date:</label>
+            <input type="date" id="salesDate" value="">
+            <button class="btn btn-primary" onclick="loadSalesReport()"><i class="fa-solid fa-search"></i> View</button>
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; flex: 1;">
+            <strong>Total Bills:</strong> <span id="report-total-bills" style="font-size: 1.2rem; color: var(--primary-color);">0</span>
+        </div>
+        <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; flex: 1;">
+            <strong>Total Revenue:</strong> <span id="report-total-revenue" style="font-size: 1.2rem; color: var(--success);">Rs. 0.00</span>
+        </div>
+    </div>
+
+    <table id="salesTable">
+        <thead>
+            <tr>
+                <th>Bill Number</th>
+                <th>Time</th>
+                <th>Discount</th>
+                <th>Final Amount</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="salesTableBody">
+            <tr><td colspan="5" style="text-align: center;">Select a date to view sales...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+    
+    <div class="report-section" style="margin-bottom: 0;">
+        <div class="report-header">
+            <h3 style="color: var(--danger);"><i class="fa-solid fa-arrow-trend-down"></i> Low Stock Alert</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Medicine</th>
+                    <th>Stock Left</th>
+                </tr>
+            </thead>
+            <tbody id="lowStockTableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="report-section" style="margin-bottom: 0;">
+        <div class="report-header">
+            <h3 style="color: #F59E0B;"><i class="fa-solid fa-hourglass-half"></i> Expiring Soon</h3>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Medicine</th>
+                    <th>Expiry Date</th>
+                </tr>
+            </thead>
+            <tbody id="expiryTableBody">
+                </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Sidebar highlight
+    document.getElementById('nav-reports').classList.add('active');
+
+    // Default date aaj ki set karna (Local timezone ke hisaab se)
+    const now = new Date();
+    const today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    document.getElementById('salesDate').value = today;
+
+    // 1. Sales Report Load Karna
+    async function loadSalesReport() {
+        const dateStr = document.getElementById('salesDate').value;
+        if (!dateStr) {
+            alert("Please select a valid date.");
+            return;
+        }
+
+        const tbody = document.getElementById('salesTableBody');
+        
+        try {
+            const response = await fetch(`/api/reports/sales/${dateStr}`);
+            const data = await response.json();
+            
+            document.getElementById('report-total-bills').innerText = data.total_bills || 0;
+            document.getElementById('report-total-revenue').innerText = `Rs. ${(data.total_revenue || 0).toFixed(2)}`;
+            
+            tbody.innerHTML = '';
+            if (data.bills.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No sales found for this date.</td></tr>';
+                return;
+            }
+            
+            data.bills.forEach(bill => {
+                // Time ko format karna
+                const timeStr = new Date(bill.date_created).toLocaleTimeString();
+                const row = `
+                    <tr>
+                        <td><strong>${bill.bill_number}</strong></td>
+                        <td>${timeStr}</td>
+                        <td>Rs. ${bill.discount.toFixed(2)}</td>
+                        <td style="font-weight: bold; color: var(--success);">Rs. ${bill.final_amount.toFixed(2)}</td>
+                        <td>
+                            ${!bill.bill_number.startsWith('REF-') ? 
+                                `<button onclick="refundBill('${bill.bill_number}')" class="btn badge-danger" style="border:none; cursor:pointer;">Refund</button>` 
+                                : '<span class="badge-danger" style="background:#6B7280;">Refunded</span>'}
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (error) {
+            console.error("Sales fetch error:", error);
+        }
+    }
+
+    // Refund logic
+    async function refundBill(billNumber) {
+        if (!confirm(`Are you sure you want to refund ${billNumber}? This will reverse the bill and restore the medicine stock.`)) return;
+        
+        try {
+            // Need to pass username and password if using Basic Auth via fetch?
+            // Browser handles Basic Auth automatically for same-origin requests once logged in.
+            const response = await fetch(`/api/pos/refund/${billNumber}`, { method: 'POST' });
+            const result = await response.json();
+            
+            if (response.ok) {
+                alert(result.message);
+                loadSalesReport(); // Refresh table
+                loadLowStock(); // Refresh stock alerts
+            } else {
+                alert(`Error: ${result.detail}`);
+            }
+        } catch (error) {
+            alert("Network error processing refund!");
+            console.error(error);
+        }
+    }
+
+    // 2. Low Stock Load Karna
+    async function loadLowStock() {
+        const tbody = document.getElementById('lowStockTableBody');
+        try {
+            const response = await fetch('/api/reports/low-stock');
+            const data = await response.json();
+            
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">All items have good stock!</td></tr>';
+                return;
+            }
+            
+            data.forEach(med => {
+                const row = `
+                    <tr>
+                        <td>${med.name}</td>
+                        <td><span class="badge-danger">${med.stock_quantity} left</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (error) {
+            console.error("Low stock fetch error:", error);
+        }
+    }
+
+    // 3. Expiry Load Karna
+    async function loadExpiring() {
+        const tbody = document.getElementById('expiryTableBody');
+        try {
+            const response = await fetch('/api/reports/expiring');
+            const data = await response.json();
+            
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">No items expiring soon!</td></tr>';
+                return;
+            }
+            
+            data.forEach(med => {
+                const row = `
+                    <tr>
+                        <td>${med.name}</td>
+                        <td><span style="color: #F59E0B; font-weight: bold;">${med.expiry_date}</span></td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (error) {
+            console.error("Expiring fetch error:", error);
+        }
+    }
+
+    // Initial load
+    loadSalesReport();
+    loadLowStock();
+    loadExpiring();
+</script>
+{% endblock %}
