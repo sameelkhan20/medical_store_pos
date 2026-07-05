@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .form-control {
+        width: 100%; padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px; margin-top: 5px; outline: none;
+    }
+    table th, table td { padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: left; }
+</style>
+
+<div class="page-title">Supplier / Distributor Ledger</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <h3 style="color: var(--primary-color); margin-bottom: 15px;"><i class="fa-solid fa-truck-fast"></i> Add New Supplier</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+        <div>
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-light);">Supplier Name</label>
+            <input type="text" id="supName" class="form-control" placeholder="Raza Bhai">
+        </div>
+        <div>
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-light);">Company / Distributor</label>
+            <input type="text" id="supCompany" class="form-control" placeholder="GSK / Abbott">
+        </div>
+        <div>
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-light);">Phone Number</label>
+            <input type="text" id="supPhone" class="form-control" placeholder="0300...">
+        </div>
+        <button onclick="addSupplier()" class="btn btn-primary" style="height: 40px; padding: 0 20px;">Add Supplier</button>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0;"><i class="fa-solid fa-building"></i> All Suppliers</h3>
+        <input type="text" id="supSearch" class="form-control" placeholder="Search name or company..." style="width: 250px; margin-top: 0;" onkeyup="loadSuppliers()">
+    </div>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--bg-color);">
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Phone</th>
+                    <th>Payable Balance</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="supTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('nav-suppliers').classList.add('active');
+
+    async function loadSuppliers() {
+        const search = document.getElementById('supSearch').value;
+        try {
+            const res = await fetch(`/api/suppliers/?search=${search}`);
+            const data = await res.json();
+            const tbody = document.getElementById('supTableBody');
+            tbody.innerHTML = '';
+            
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No suppliers found.</td></tr>';
+                return;
+            }
+            
+            data.forEach(s => {
+                const balColor = s.balance > 0 ? '#EF4444' : '#10B981';
+                const row = `<tr>
+                    <td>${s.id}</td>
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.company || 'N/A'}</td>
+                    <td>${s.phone || 'N/A'}</td>
+                    <td style="color: ${balColor}; font-weight: bold;">Rs. ${s.balance.toFixed(2)}</td>
+                    <td>
+                        <button onclick="paySupplier(${s.id}, '${s.name}')" class="btn" style="background: #10B981; color: white; padding: 5px 10px; font-size: 0.8rem; border: none; cursor: pointer;">Pay Them</button>
+                    </td>
+                </tr>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function addSupplier() {
+        const name = document.getElementById('supName').value;
+        const company = document.getElementById('supCompany').value;
+        const phone = document.getElementById('supPhone').value;
+        if(!name) { alert("Name is required!"); return; }
+        
+        try {
+            const res = await fetch('/api/suppliers/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, company, phone})
+            });
+            if(res.ok) {
+                alert("Supplier Add Ho Gaya!");
+                document.getElementById('supName').value = '';
+                document.getElementById('supCompany').value = '';
+                document.getElementById('supPhone').value = '';
+                loadSuppliers();
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function paySupplier(id, name) {
+        const amtStr = prompt(`"${name}" ko kitne paise diye?`);
+        if(!amtStr) return;
+        const amt = parseFloat(amtStr);
+        if(isNaN(amt) || amt <= 0) { alert("Invalid amount!"); return; }
+        
+        try {
+            const res = await fetch(`/api/suppliers/${id}/pay`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({amount: amt, description: "Cash paid to supplier"})
+            });
+            if(res.ok) {
+                alert("Payment Recorded!");
+                loadSuppliers();
+            } else {
+                alert("Error recording payment.");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadSuppliers);
+</script>
+{% endblock %}

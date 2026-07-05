@@ -36,6 +36,7 @@
     }
     
     .icon-sales { background: linear-gradient(135deg, #4F46E5, #3B82F6); }
+    .icon-profit { background: linear-gradient(135deg, #8B5CF6, #D946EF); }
     .icon-bills { background: linear-gradient(135deg, #10B981, #34D399); }
     .icon-alert { background: linear-gradient(135deg, #EF4444, #F87171); }
     .icon-warning { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
@@ -65,6 +66,16 @@
         <div class="stat-info">
             <h4>Today's Sales</h4>
             <h2 id="dash-sales">Rs. 0</h2>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon icon-profit">
+            <i class="fa-solid fa-hand-holding-dollar"></i>
+        </div>
+        <div class="stat-info">
+            <h4>Today's Profit</h4>
+            <h2 id="dash-profit">Rs. 0</h2>
         </div>
     </div>
     
@@ -113,6 +124,7 @@
             
             // HTML elements ko update karna
             document.getElementById('dash-sales').innerText = `Rs. ${data.today_sales.toFixed(2)}`;
+            document.getElementById('dash-profit').innerText = `Rs. ${(data.today_profit || 0).toFixed(2)}`;
             document.getElementById('dash-bills').innerText = data.today_bills_count;
             document.getElementById('dash-low-stock').innerText = data.low_stock_count;
             document.getElementById('dash-expiring').innerText = data.expiring_items_count;

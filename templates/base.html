@@ -1,19 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PharmaPOS - Medical Store System</title>
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
-    
+
     <nav class="sidebar">
         <div class="sidebar-header">
             <i class="fa-solid fa-staff-snake"></i> PharmaPOS
+            {% if user %}
+            <div style="font-size: 0.8rem; margin-top: 5px; color: #9CA3AF;">
+                <i class="fa-solid fa-user"></i> {{ user.username }} ({{ user.role }})
+            </div>
+            {% endif %}
         </div>
         <ul class="nav-links">
             <li>
@@ -31,9 +38,21 @@
                     <i class="fa-solid fa-boxes-stacked"></i> Inventory
                 </a>
             </li>
+            {% if user and user.role == 'admin' %}
             <li>
                 <a href="/reports" id="nav-reports">
                     <i class="fa-solid fa-file-invoice-dollar"></i> Reports
+                </a>
+            </li>
+            <li>
+                <a href="/suppliers" id="nav-suppliers">
+                    <i class="fa-solid fa-truck"></i> Suppliers
+                </a>
+            </li>
+            {% endif %}
+            <li>
+                <a href="/customers" id="nav-customers">
+                    <i class="fa-solid fa-users"></i> Khata (Customers)
                 </a>
             </li>
         </ul>
@@ -45,8 +64,9 @@
     </main>
 
     <script src="/static/js/app.js"></script>
-    
+
     {% block scripts %}
     {% endblock %}
 </body>
+
 </html>

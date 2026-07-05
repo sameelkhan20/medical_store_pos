@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .form-control {
+        width: 100%; padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px; margin-top: 5px; outline: none;
+    }
+    table th, table td { padding: 12px; border-bottom: 1px solid #E5E7EB; text-align: left; }
+</style>
+
+<div class="page-title">Customer Khata (Ledger)</div>
+
+<div class="card" style="margin-bottom: 20px;">
+    <h3 style="color: var(--primary-color); margin-bottom: 15px;"><i class="fa-solid fa-user-plus"></i> Add New Customer</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 15px; align-items: end;">
+        <div>
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-light);">Customer Name</label>
+            <input type="text" id="custName" class="form-control" placeholder="Ali Khan">
+        </div>
+        <div>
+            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-light);">Phone Number</label>
+            <input type="text" id="custPhone" class="form-control" placeholder="03001234567">
+        </div>
+        <button onclick="addCustomer()" class="btn btn-primary" style="height: 40px; padding: 0 20px;">Add Customer</button>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0;"><i class="fa-solid fa-users"></i> All Customers</h3>
+        <input type="text" id="custSearch" class="form-control" placeholder="Search customer..." style="width: 250px; margin-top: 0;" onkeyup="loadCustomers()">
+    </div>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--bg-color);">
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Balance (Udhar)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="custTableBody">
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('nav-customers').classList.add('active');
+
+    async function loadCustomers() {
+        const search = document.getElementById('custSearch').value;
+        try {
+            const res = await fetch(`/api/customers/?search=${search}`);
+            const data = await res.json();
+            const tbody = document.getElementById('custTableBody');
+            tbody.innerHTML = '';
+            
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No customers found.</td></tr>';
+                return;
+            }
+            
+            data.forEach(c => {
+                const balColor = c.balance > 0 ? '#EF4444' : (c.balance < 0 ? '#10B981' : '#6B7280');
+                const row = `<tr>
+                    <td>${c.id}</td>
+                    <td><strong>${c.name}</strong></td>
+                    <td>${c.phone}</td>
+                    <td style="color: ${balColor}; font-weight: bold;">Rs. ${c.balance.toFixed(2)}</td>
+                    <td>
+                        <button onclick="receivePayment(${c.id}, '${c.name}')" class="btn" style="background: #10B981; color: white; padding: 5px 10px; font-size: 0.8rem; border: none; cursor: pointer;">Receive Payment</button>
+                    </td>
+                </tr>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function addCustomer() {
+        const name = document.getElementById('custName').value;
+        const phone = document.getElementById('custPhone').value;
+        if(!name || !phone) { alert("Dono fields zaroori hain!"); return; }
+        
+        try {
+            const res = await fetch('/api/customers/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, phone})
+            });
+            if(res.ok) {
+                alert("Customer Add Ho Gaya!");
+                document.getElementById('custName').value = '';
+                document.getElementById('custPhone').value = '';
+                loadCustomers();
+            } else {
+                const data = await res.json();
+                alert(data.detail);
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function receivePayment(id, name) {
+        const amtStr = prompt(`"${name}" se kitne paise receive kiye?`);
+        if(!amtStr) return;
+        const amt = parseFloat(amtStr);
+        if(isNaN(amt) || amt <= 0) { alert("Invalid amount!"); return; }
+        
+        try {
+            const res = await fetch(`/api/customers/${id}/pay`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({amount: amt, description: "Cash received"})
+            });
+            if(res.ok) {
+                alert("Payment Recorded!");
+                loadCustomers();
+            } else {
+                alert("Error recording payment.");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCustomers);
+</script>
+{% endblock %}

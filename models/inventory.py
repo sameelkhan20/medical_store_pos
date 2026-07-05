@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Date
 from database.config import Base
+import datetime
 
 class Medicine(Base):
     __tablename__ = "medicines"
@@ -17,3 +18,22 @@ class Medicine(Base):
     sale_price = Column(Float, nullable=False)
     stock_quantity = Column(Integer, default=0)
     is_deleted = Column(Integer, default=0)  # Use Integer for Boolean compatibility in SQLite
+
+class StockAdjustment(Base):
+    __tablename__ = "stock_adjustments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    medicine_id = Column(Integer, nullable=False, index=True)
+    quantity_adjusted = Column(Integer, nullable=False) # Negative for damage/expiry, positive for correction
+    reason = Column(String, nullable=False)
+    date_created = Column(String, default=lambda: str(datetime.date.today()))
+
+class MedicineBatch(Base):
+    __tablename__ = "medicine_batches"
+
+    id = Column(Integer, primary_key=True, index=True)
+    medicine_id = Column(Integer, nullable=False, index=True)
+    batch_number = Column(String, nullable=True)
+    expiry_date = Column(Date, nullable=True)
+    stock_quantity = Column(Integer, default=0)
+    date_added = Column(String, default=lambda: str(datetime.date.today()))

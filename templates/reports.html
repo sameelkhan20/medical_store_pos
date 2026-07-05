@@ -47,15 +47,24 @@
     }
 </style>
 
-<div class="page-title">Reports & Analytics</div>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="page-title">Sales & Profit Reports</div>
+    <div>
+        <a href="/api/reports/export" class="btn btn-primary" style="background: #10B981; color: white; border: none; text-decoration: none; display: inline-block; padding: 10px 15px;"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+        <a href="/api/backup" class="btn btn-primary" style="background: #3B82F6; color: white; border: none; text-decoration: none; display: inline-block; padding: 10px 15px; margin-left: 10px;"><i class="fa-solid fa-database"></i> Download Backup</a>
+    </div>
+</div>
 
-<div class="report-section">
+<div class="card" style="margin-bottom: 20px;">
     <div class="report-header">
         <h3 style="color: var(--text-main);"><i class="fa-solid fa-calendar-day"></i> Daily Sales History</h3>
         <div class="filter-group">
+            <input type="text" id="searchBillNumber" placeholder="Search Bill No (e.g. BILL-123)" style="padding: 8px 12px; border: 1px solid #D1D5DB; border-radius: 6px; outline: none; width: 220px;">
+            <button class="btn btn-primary" onclick="searchBill()"><i class="fa-solid fa-search"></i> Search</button>
+            <span style="margin: 0 10px; color: #9CA3AF;">|</span>
             <label>Select Date:</label>
             <input type="date" id="salesDate" value="">
-            <button class="btn btn-primary" onclick="loadSalesReport()"><i class="fa-solid fa-search"></i> View</button>
+            <button class="btn btn-primary" onclick="loadSalesReport()"><i class="fa-solid fa-search"></i> View Date</button>
         </div>
     </div>
     
@@ -66,6 +75,9 @@
         <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; flex: 1;">
             <strong>Total Revenue:</strong> <span id="report-total-revenue" style="font-size: 1.2rem; color: var(--success);">Rs. 0.00</span>
         </div>
+        <div style="background: #EEF2FF; padding: 15px; border-radius: 8px; flex: 1;">
+            <strong>Total Profit:</strong> <span id="report-total-profit" style="font-size: 1.2rem; color: #4F46E5;">Rs. 0.00</span>
+        </div>
     </div>
 
     <table id="salesTable">
@@ -75,11 +87,12 @@
                 <th>Time</th>
                 <th>Discount</th>
                 <th>Final Amount</th>
+                <th>Profit</th>
                 <th>Action</th>
             </tr>
         </thead>
         <tbody id="salesTableBody">
-            <tr><td colspan="5" style="text-align: center;">Select a date to view sales...</td></tr>
+            <tr><td colspan="6" style="text-align: center;">Select a date to view sales...</td></tr>
         </tbody>
     </table>
 </div>
@@ -147,10 +160,11 @@
             
             document.getElementById('report-total-bills').innerText = data.total_bills || 0;
             document.getElementById('report-total-revenue').innerText = `Rs. ${(data.total_revenue || 0).toFixed(2)}`;
+            document.getElementById('report-total-profit').innerText = `Rs. ${(data.total_profit || 0).toFixed(2)}`;
             
             tbody.innerHTML = '';
             if (data.bills.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No sales found for this date.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No sales found for this date.</td></tr>';
                 return;
             }
             
@@ -163,6 +177,7 @@
                         <td>${timeStr}</td>
                         <td>Rs. ${bill.discount.toFixed(2)}</td>
                         <td style="font-weight: bold; color: var(--success);">Rs. ${bill.final_amount.toFixed(2)}</td>
+                        <td style="font-weight: bold; color: #4F46E5;">Rs. ${(bill.final_amount - bill.total_cost).toFixed(2)}</td>
                         <td>
                             ${!bill.bill_number.startsWith('REF-') ? 
                                 `<button onclick="refundBill('${bill.bill_number}')" class="btn badge-danger" style="border:none; cursor:pointer;">Refund</button>` 
@@ -174,6 +189,53 @@
             });
         } catch (error) {
             console.error("Sales fetch error:", error);
+        }
+    }
+
+    // Bill Search Logic
+    async function searchBill() {
+        const billNumber = document.getElementById('searchBillNumber').value.trim();
+        if (!billNumber) {
+            alert("Please enter a bill number to search.");
+            return;
+        }
+
+        const tbody = document.getElementById('salesTableBody');
+        
+        try {
+            const response = await fetch(`/api/pos/bill/${billNumber}`);
+            if (!response.ok) {
+                alert("Bill system mein nahi mila!");
+                return;
+            }
+            
+            const bill = await response.json();
+            
+            document.getElementById('report-total-bills').innerText = 1;
+            document.getElementById('report-total-revenue').innerText = `Rs. ${(bill.final_amount || 0).toFixed(2)}`;
+            document.getElementById('report-total-profit').innerText = `Rs. ${(bill.final_amount - (bill.total_cost || 0)).toFixed(2)}`;
+            
+            tbody.innerHTML = '';
+            
+            const timeStr = new Date(bill.date).toLocaleString();
+            const row = `
+                <tr>
+                    <td><strong>${bill.bill_number}</strong></td>
+                    <td>${timeStr}</td>
+                    <td>Rs. ${bill.discount.toFixed(2)}</td>
+                    <td style="font-weight: bold; color: var(--success);">Rs. ${bill.final_amount.toFixed(2)}</td>
+                    <td style="font-weight: bold; color: #4F46E5;">Rs. ${(bill.final_amount - (bill.total_cost || 0)).toFixed(2)}</td>
+                    <td>
+                        ${!bill.bill_number.startsWith('REF-') ? 
+                            `<button onclick="refundBill('${bill.bill_number}')" class="btn badge-danger" style="border:none; cursor:pointer;">Refund</button>` 
+                            : '<span class="badge-danger" style="background:#6B7280;">Refunded</span>'}
+                    </td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', row);
+        } catch (error) {
+            console.error("Search fetch error:", error);
+            alert("Error searching for bill.");
         }
     }
 
@@ -241,10 +303,23 @@
             }
             
             data.forEach(med => {
+                const expDate = new Date(med.expiry_date);
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                expDate.setHours(0,0,0,0);
+                
+                let color = "#F59E0B"; // Yellow for expiring soon
+                let text = med.expiry_date;
+                
+                if (expDate < today) {
+                    color = "var(--danger)"; // Red for already expired
+                    text = `${med.expiry_date} (EXPIRED)`;
+                }
+
                 const row = `
                     <tr>
                         <td>${med.name}</td>
-                        <td><span style="color: #F59E0B; font-weight: bold;">${med.expiry_date}</span></td>
+                        <td><span style="color: ${color}; font-weight: bold;">${text}</span></td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', row);

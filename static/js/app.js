@@ -47,6 +47,9 @@ async function loadMedicines() {
                     <td>Rs. ${med.sale_price}</td>
                     <td><span style="color: ${stockColor}; font-weight: 700;">${med.stock_quantity}</span></td>
                     <td>${med.expiry_date ? `<span style="color: #F59E0B; font-weight:bold;">${med.expiry_date}</span>` : '<span style="color: #9CA3AF;">N/A</span>'}</td>
+                    <td>
+                        <button onclick="adjustStock(${med.id}, '${med.name}')" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.8rem; background: #6B7280; border: none;">Adjust</button>
+                    </td>
                 </tr>
             `;
             inventoryTableBody.insertAdjacentHTML('beforeend', row);
@@ -125,5 +128,42 @@ if (addMedicineForm) {
             currentPage++;
             loadMedicines();
         });
+    }
+}
+
+// Stock Adjustment Logic
+async function adjustStock(medicineId, name) {
+    const qtyStr = prompt(`"${name}" ka stock adjust karein.\n\nNaye items add karne ke liye + likhein (e.g., 5).\nDamage/Expire nikalne ke liye - likhein (e.g., -2):`);
+    if (!qtyStr) return;
+    
+    const qty = parseInt(qtyStr);
+    if (isNaN(qty) || qty === 0) {
+        alert("Invalid quantity!");
+        return;
+    }
+    
+    const reason = prompt(`Reason for adjustment (e.g., Damaged, Found, Expired)?`);
+    if (!reason) return;
+
+    try {
+        const response = await fetch(`/api/inventory/${medicineId}/adjust`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                quantity_adjusted: qty,
+                reason: reason
+            })
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert(result.message);
+            loadMedicines(); // Refresh table
+        } else {
+            alert(`Error: ${result.detail}`);
+        }
+    } catch (error) {
+        alert("Error connecting to server!");
+        console.error(error);
     }
 }

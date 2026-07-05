@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh;">
+    <i class="fa-solid fa-lock" style="font-size: 5rem; color: #EF4444; margin-bottom: 20px;"></i>
+    <h1 style="color: var(--text-main); margin-bottom: 10px;">Access Denied</h1>
+    <p style="color: var(--text-light); text-align: center; max-width: 400px;">
+        Aap ke paas is page ko dekhne ki ijazat nahi hai. Yeh page sirf <strong>Admin</strong> role ke liye mahdood hai.
+    </p>
+    <a href="/" class="btn btn-primary" style="margin-top: 20px; text-decoration: none;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

@@ -11,8 +11,11 @@ class Bill(Base):
     bill_number = Column(String, unique=True, index=True, nullable=False)
     date_created = Column(DateTime, default=datetime.datetime.now)
     total_amount = Column(Float, default=0.0)
+    total_cost = Column(Float, default=0.0)
     discount = Column(Float, default=0.0)
     final_amount = Column(Float, default=0.0)
+    payment_method = Column(String, default="cash")
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
 
     # Ek bill mein multiple items ho sakte hain
     items = relationship("BillItem", back_populates="bill")
